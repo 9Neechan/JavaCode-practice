@@ -30,7 +30,6 @@ func TestHashRunes(t *testing.T) {
 	expectedHash := sha256.Sum256([]byte(expectedStr))
 	expectedHex := hex.EncodeToString(expectedHash[:])
 
-	// Проверяем хеширование
 	result := hashRunes(runes)
 	require.Equal(t, expectedHex, result)
 }
