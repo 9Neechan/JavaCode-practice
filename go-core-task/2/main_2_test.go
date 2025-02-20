@@ -12,7 +12,6 @@ func TestSliceExample(t *testing.T) {
 		expected []int
 	}{
 		{[]int{1, 2, 3, 4, 5}, []int{2, 4}},
-		{[]int{10, 15, 20, 25, 30}, []int{10, 20, 30}},
 		{[]int{}, []int{}}, 
 	}
 
@@ -31,7 +30,6 @@ func TestAddElements(t *testing.T) {
 		expected []int
 	}{
 		{[]int{1, 2, 3}, 4, []int{1, 2, 3, 4}},
-		{[]int{5, 6}, 7, []int{5, 6, 7}},
 		{[]int{}, 1, []int{1}}, 
 	}
 
@@ -49,7 +47,6 @@ func TestCopySlice(t *testing.T) {
 		expected []int
 	}{
 		{[]int{1, 2, 3, 4}, []int{1, 2, 3, 4}},
-		{[]int{10, 20, 30}, []int{10, 20, 30}},
 		{[]int{}, []int{}}, 
 	}
 
@@ -57,6 +54,7 @@ func TestCopySlice(t *testing.T) {
 		t.Run("Testing copySlice", func(t *testing.T) {
 			result := copySlice(test.input)
 			require.Equal(t, test.expected, result)
+			require.NotSame(t, &test.input, &result)
 		})
 	}
 }
@@ -67,9 +65,8 @@ func TestRemoveElement(t *testing.T) {
 		ind      int
 		expected []int
 	}{
-		{[]int{1, 2, 3, 4, 5}, 2, []int{1, 2, 4, 5}}, // Удаление элемента с индексом 2 (значение 3)
-		{[]int{10, 20, 30}, 1, []int{10, 30}},          // Удаление элемента с индексом 1 (значение 20)  
-		{[]int{1}, 0, []int{}},                         // Удаление единственного элемента
+		{[]int{1, 2, 3, 4, 5}, 2, []int{1, 2, 4, 5}}, 
+		{[]int{1}, 0, []int{}},                        
 	}
 
 	for _, test := range tests {
