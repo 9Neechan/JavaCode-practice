@@ -11,10 +11,10 @@ func main() {
 	ch2 := make(chan float64)
 
 	go func() {
-		for num := range ch1 { 
-			ch2 <- math.Pow(float64(num), 2) 
+		for num := range ch1 {
+			ch2 <- math.Pow(float64(num), 2)
 		}
-		close(ch2) 
+		close(ch2)
 	}()
 
 	go func() {

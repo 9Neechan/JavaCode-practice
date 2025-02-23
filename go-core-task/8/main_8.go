@@ -2,69 +2,59 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"sync"
 )
 
-// CustomWaitGroup - кастомная реализация WaitGroup на основе канала.
-type CustomWaitGroup struct {
-	sem chan struct{}
+type MyWaitGroup struct {
+	counter int        // Счётчик горутин
+	mu      sync.Mutex // Мьютекс для защиты счётчика
+	cond    *sync.Cond // Условная переменная для ожидания
 }
 
-// NewCustomWaitGroup - инициализация CustomWaitGroup с количеством горутин, которые нужно ожидать.
-func NewCustomWaitGroup(count int) *CustomWaitGroup {
-	return &CustomWaitGroup{
-		sem: make(chan struct{}, count),
+func NewMyWaitGroup() *MyWaitGroup {
+	wg := &MyWaitGroup{}
+	wg.cond = sync.NewCond(&wg.mu)
+	return wg
+}
+
+func (wg *MyWaitGroup) Add(delta int) {
+	wg.mu.Lock()
+
+	wg.counter += delta
+	if wg.counter == 0 {
+		wg.cond.Broadcast() // Если все горутины завершились, уведомляем ожидающих
 	}
-}
-
-// Add - добавление новой горутины для ожидания (за счет записи в канал).
-func (wg *CustomWaitGroup) Add(n int) {
-	for i := 0; i < n; i++ {
-		wg.sem <- struct{}{} // Записываем в канал, сигнализируя о начале работы горутины
+	if wg.counter < 0 {
+		panic("counter < 0")
 	}
+
+	wg.mu.Unlock()
 }
 
-// Done - сигнализирует, что горутина завершила свою работу.
-func (wg *CustomWaitGroup) Done() {
-	<-wg.sem // Получаем из канала, сигнализируя о завершении работы горутины
+func (wg *MyWaitGroup) Done() {
+	wg.Add(-1)
 }
 
-// Wait - блокирует выполнение до тех пор, пока все горутины не завершат работу.
-func (wg *CustomWaitGroup) Wait() {
-	// Ждем, пока все элементы не будут получены из канала
-	for len(wg.sem) > 0 {
-		<-wg.sem
+func (wg *MyWaitGroup) Wait() {
+	wg.mu.Lock()
+	for wg.counter > 0 {
+		wg.cond.Wait() // Ожидаем завершения горутин
 	}
+	wg.mu.Unlock()
 }
 
 func main() {
-	var wg CustomWaitGroup
+	wg := NewMyWaitGroup()
 
-	// Запускаем 3 горутины
-	wg.Add(3)
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func(i int) {
+			fmt.Printf("Горутина %d начала работу\n", i)
+			wg.Done()
+			fmt.Printf("Горутина %d завершила работу\n", i)
+		}(i)
+	}
 
-	go func() {
-		defer wg.Done()
-		fmt.Println("Горутина 1: Начало работы")
-		time.Sleep(2 * time.Second)
-		fmt.Println("Горутина 1: Завершение работы")
-	}()
-
-	go func() {
-		defer wg.Done()
-		fmt.Println("Горутина 2: Начало работы")
-		time.Sleep(3 * time.Second)
-		fmt.Println("Горутина 2: Завершение работы")
-	}()
-
-	go func() {
-		defer wg.Done()
-		fmt.Println("Горутина 3: Начало работы")
-		time.Sleep(1 * time.Second)
-		fmt.Println("Горутина 3: Завершение работы")
-	}()
-
-	// Ожидаем завершения всех горутин
 	wg.Wait()
-	fmt.Println("Все горутины завершены.")
+	fmt.Println("Все горутины завершили работу")
 }
